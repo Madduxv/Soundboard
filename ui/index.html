@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Soundboard</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0f0f1a;
+        --surface: #1a1a2e;
+        --surface-hover: #293241;
+        --accent: #3d5a80;
+        --text: #eaeaea;
+        --muted: #888;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 24px;
+        background: var(--surface);
+        border-bottom: 1px solid #2a2a40;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 1.5rem;
+      }
+
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.1rem;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+      }
+
+      label {
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+
+      select,
+      button.secondary,
+      input[type="text"],
+      input[type="file"] {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid #3a3a55;
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
+      }
+
+      input[type="range"] {
+        width: 120px;
+        accent-color: var(--accent);
+      }
+
+      button.secondary {
+        cursor: pointer;
+      }
+
+      button.secondary:hover {
+        background: var(--surface-hover);
+      }
+
+      button.danger {
+        background: #4a1f1f;
+        color: #ffb4b4;
+        border: 1px solid #6b2e2e;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+
+      button.danger:hover {
+        background: #5c2626;
+      }
+
+      main {
+        padding: 24px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+      }
+
+      .sound-btn {
+        background: var(--surface);
+        color: var(--text);
+        border: 1px solid #2a2a40;
+        border-radius: 12px;
+        padding: 20px 16px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, transform 0.1s;
+      }
+
+      .sound-btn:hover {
+        background: var(--accent);
+      }
+
+      .sound-btn:active {
+        transform: scale(0.97);
+      }
+
+      .empty {
+        color: var(--muted);
+        padding: 48px 0;
+        text-align: center;
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        z-index: 100;
+      }
+
+      .modal[hidden] {
+        display: none;
+      }
+
+      .modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+      }
+
+      .modal-panel {
+        position: relative;
+        width: min(100%, 420px);
+        background: var(--surface);
+        border: 1px solid #2a2a40;
+        border-radius: 16px;
+        padding: 24px;
+      }
+
+      .modal-panel.wide {
+        width: min(100%, 520px);
+      }
+
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+
+      .field label {
+        font-size: 0.85rem;
+      }
+
+      .field input[type="text"],
+      .field input[type="file"] {
+        width: 100%;
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 20px;
+      }
+
+      .manage-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        max-height: 240px;
+        overflow-y: auto;
+        margin-bottom: 16px;
+      }
+
+      .manage-item {
+        text-align: left;
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid #3a3a55;
+        border-radius: 8px;
+        padding: 10px 12px;
+        cursor: pointer;
+      }
+
+      .manage-item:hover {
+        background: var(--surface-hover);
+      }
+
+      .manage-item.selected {
+        border-color: var(--accent);
+        background: var(--surface-hover);
+      }
+
+      .edit-panel[hidden] {
+        display: none;
+      }
+
+      .edit-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: space-between;
+        margin-top: 16px;
+      }
+
+      .sync-note {
+        margin-top: 12px;
+        font-size: 0.85rem;
+        color: var(--muted);
+      }
+
+      .sync-note button {
+        background: none;
+        border: none;
+        color: var(--accent);
+        cursor: pointer;
+        padding: 0;
+        font: inherit;
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Soundboard</h1>
+      <div class="controls">
+        <button class="secondary" id="open-upload" type="button">Add Sound</button>
+        <button class="secondary" id="open-manage" type="button">Manage</button>
+
+        <label for="device">Output</label>
+        <select id="device"></select>
+
+        <label for="volume">Volume</label>
+        <input id="volume" type="range" min="0" max="1" step="0.05" />
+
+        <button class="secondary" id="stop">Stop All</button>
+      </div>
+    </header>
+
+    <main>
+      <div class="grid" id="grid"></div>
+      <p class="empty" id="empty" hidden>No sounds yet. Click Add Sound to upload one.</p>
+    </main>
+
+    <div class="modal" id="upload-modal" hidden>
+      <div class="modal-backdrop" data-close="upload-modal"></div>
+      <div class="modal-panel">
+        <h2>Add Sound</h2>
+        <form id="upload-form">
+          <div class="field">
+            <label for="upload-file">Audio file</label>
+            <input id="upload-file" type="file" accept="audio/*,.mp3,.wav,.ogg,.flac,.mov" required />
+          </div>
+          <div class="field">
+            <label for="upload-name">Display name (optional)</label>
+            <input id="upload-name" type="text" maxlength="80" placeholder="Defaults to filename" />
+          </div>
+          <div class="modal-actions">
+            <button class="secondary" type="button" data-close="upload-modal">Cancel</button>
+            <button class="secondary" type="submit">Upload</button>
+          </div>
+        </form>
+        <p class="sync-note">
+          Or drop files into <strong>sounds/</strong> and
+          <button type="button" id="sync">sync folder</button>.
+        </p>
+      </div>
+    </div>
+
+    <div class="modal" id="manage-modal" hidden>
+      <div class="modal-backdrop" data-close="manage-modal"></div>
+      <div class="modal-panel wide">
+        <h2>Manage Sounds</h2>
+        <div class="manage-list" id="manage-list"></div>
+        <div class="edit-panel" id="edit-panel" hidden>
+          <div class="field">
+            <label for="edit-name">Display name</label>
+            <input id="edit-name" type="text" maxlength="80" />
+          </div>
+          <div class="edit-actions">
+            <button class="danger" id="delete-sound" type="button">Delete</button>
+            <div class="modal-actions" style="margin-top: 0">
+              <button class="secondary" type="button" data-close="manage-modal">Close</button>
+              <button class="secondary" id="save-edit" type="button">Save</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" id="manage-close-only">
+          <button class="secondary" type="button" data-close="manage-modal">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
